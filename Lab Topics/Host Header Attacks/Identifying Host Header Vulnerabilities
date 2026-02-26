@@ -1,0 +1,74 @@
+# How to Identify and Exploit Host Header Vulnerabilities
+
+##How to test for Vulnerabilities using Host Header
+In order to test for Host Header vulnerabilities, you will first need to intercept the request using a tool like BurpProxy. This will allow you to modify the Host Header before it reaches the destination server.
+
+### Supply an Arbitrary Host Header
+During the probing stage, supply an arbitrary header and see what happens.
+
+Some intercepting proxies derive the target IP address from the Host Header directly, which makes this testing all but impossible. Any changes you make to the Host Header would cause the request to be sent to a completely different IP address. Burp maintains the separation between the Host Header and target IP address. This allows us to supply any arbitrary or malformed Host Header that we want, while ensuring the request is sent to the intended target.
+
+If you modify the Host Header and can still access the application, then the server may be configured to default or fallback to an application if the host header is not recognized. If this is the behavior, then we can explore further for vulnerabilities!
+
+Tampering with the host header means the application may not be reachable. The front-end or load balancer may simply not know where to forward the request and result in an "Invalid Host Header" error. This is especially likely if the target is accessed via a CDN. If this is the case, move on to other techniques.
+
+## Check for Flawed Validation
+Instead of "Invalid Host Header" you may get a "request blocked" error of some kind. This can be because the website validatest whether the Host Header matches the SNI from the TLS handshake. This does not mean they are immune to Host Header attacks.
+
+Understand how the website parses the Host Header. Some parsing algorithms will omit ports from the Host Header, meaning only the domain name is validated. If you are trying to supply a non-numeric port, you can leave the domain name untouched to ensure that you reach the target application, while potentially injecting a payload via the port.
+
+``Host: Vulnerable-website.com:bad-stuff-here``
+
+Other applications may try to match logic for arbitrary sub-domains. In this case, we may be able to bypass the validation by registering an arbitrary domain that ends with the same sequence of characters as the whitelisted one. Or, you can take advantage of a more-vulnerable subdomain you already compromised.
+
+``Host: notvulnerable-website.come``
+
+``Host: hacked-subdomain.vulnerable-website.com``
+
+## Send Ambiguous Requests
+Code that validates the Host and the code that does something vulnerable with it often reside in different application components, or on separate servers. By identifying and exploiting discrepancies in how they retrieve the Host Header, you may be able to send ambiguous requests that appear to have a different host depending on which system is looking at it.
+
+### Inject Duplicate Host Headers
+You can try duplicating Host Headers. Admittedly, this will often result in the request being blocked.
+Different systems and technologies will handle these cases differently. It is common for one of the two headers to be given precedence over the other one, effectively override its value. When systems disagree about which header is the correct one, this can lead to discrepancies that can be exploited.
+
+``Host: Vulnerable-website.com
+  Host: Bad-Stuff-Here``
+
+  Front-end may give precedence to the first instance of the Host Header, while the back-end prefers the second instance. You could use the first header to ensure the request is routed to the intended target, then use the second header to pass your payload into the server-side code.
+
+ ### Supply an Absolute URL
+ The request line typically specifies a relative path on the requested domain, many servers are also configured to understand requests for absolute URLs.
+
+ Ambiguity caused by supplying both an Absolute URL and a Host Header can lead to discrepancies between systems. Officially, the request line should be given precedence when routing the request but, in practice, this is not always the case. You can potentially exploit these discrepancies in much the same way as duplicate headers. Consider trying HTTP and HTTPS protocols for this.
+
+ ``GET https://vulnerable-website.com/ HTTP/1.1
+ Host: bad-stuff-here``
+
+### Add Line Wrapping
+Indenting HTTP Headers with a space character is a quirk. Some servers will interpret the indented header as a wrapped line and, therefore, treat it as part of the preceding header's values. Others may ignore the indented header entirely.
+Due to inconsistencies of this case, there will often be discrepancies between different systems that process your request,
+
+``GET /example HTTP/1.1
+    Host: bad-stuff-here
+Host: vulnerable-website.com``
+
+The website may block the request with multiple headers, but we can bypass this validation by indenting one of them. If the front-end ignores the indented header, the request may be processed as an ordinary request for vulnerable-website.com. Let's say the back-end ignores the leading spaces and gives precedence to the first header in case of duplicates. This may allow us to bypass arbitrary values via the "Wrapped" Host header.
+
+### Other Techniques
+Many ways can bypass protections to send ambiguous requests. The above are not an exhaustive list, though an honorable mention is HTTP Request Smuggling.
+
+##Inject Override Headers
+If you can't override the Host header using ambiguous requests, there are other possibilities for override its value while leaving it intact.
+
+Websites are often access via some kind fo intermediary system (Load balancer or Reverse Proxy). In this architecture, the Host Header that the back-end server receives may contain the domain name for one of the intermediary systems. This is often not relevant for the requested functionality.
+
+To solve this, the front-end may inject the X-Forwarded-Host header, containing the original value of the Host-Header from the client's initial request. When the X-Forwarded-Host header is present, many frameworks will refer to this instead. You may observe this behavior even when there is no front-end that uses this header.
+The X-Forwarded-Host header can be used to inject malicious input while circumventing any validation on the Host Header itself.
+
+``Host: Vulnerable-Website.com
+X-Forwarded-Host: bad-stuff-here``
+
+Other headers with similar behavior include X-Host, X-Forwarded-Server, X-HTTP-Host-Override, and Forwarded.
+
+From a security perspective, sometimes websites support this kind of behavior unintentionally. This is usually because one or more of these headers is enabled by default ins ome third-party technology they use.
