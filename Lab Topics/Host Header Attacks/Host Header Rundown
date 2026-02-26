@@ -1,0 +1,49 @@
+# HTTP Host Headers
+
+## What is the Purpose of Host Headers?
+Host headers are used to identify which backend component the client wants to communicate with. Historically, this was not necessary because each IP would only host content for one domain. However, thanks to cloud-based solutions and outsourcing of related architecture, it is common for websites and applications to be accessible at the same IP address.
+
+### Virtual Hosting
+One scenario of a web server hosting multiple applications is virtual hosting. This can be multiple websites with a single owner, or different owners on a shared platform. While this is less common, some cloud based software as a service (SaaS) solutions still provide this option.
+
+In virtual hosting, each distinct website has a unique domain name, but they share a common IP address with the server. Websites hosted this was are known as "Virtual Hosts". A virtual is often indistinguishable from a website being hosted on its own dedicated server.
+
+### Routing Traffic via an Intermediary
+Websites can be hosted on distinct back-end server, but all traffic between the client and servers is routed through a intermediary system. For instance, a load balancer or a reverse proxy. This is prevalent in cases where clients access websites via a content distribution network (CDN)
+
+In above cases, the websites are all hosted on separate back-end servers, but all of their domain names resolve to a single IP address of the intermediary components. This presents some challenges leading to host header vulnerabilities because the proxy or load balancer still need to know the appropriate back-end that traffic should be routed to for each request.
+
+## How does Host Headers Resolve These Issues?
+Host headers are relied on to specify the intended recipient. When a browser makes a request, the URL will resolve to an IP address of the particular server. Then the server receives the request and refers to the Host Header value to determine the intended back-end and forwards the request accordingly.
+
+## What are HTTP Header Attacks?
+HTTP Header attacks exploit vulnerabilities in how websites handle the Host Header value. If the Host Header value is trusted withou insufficient escaping of validation, than an attacker can use this header to inject harmful payloads that manipulate server-side behavior.
+
+Web Applications don't typically know what domain they are deployed on unless it is manually specified in the configuration file during setup. When they need to know the current domain to generate an absolute URL, such as when including it in an email, they may resort to retrieving the domain from the host header.
+
+The header value can also be used in a variety of interactions between different systems of the website's infrastructure.
+
+### What Vulnerabilities can be Exploited with Host Header Injection?
+A wide variety of vulnerabilities can arise if insufficient escaping or validation is preset. These include but are not limited to:
+* Web Cache Poisoning
+* Business Logic Flaws in Specific Functionality
+* Routing-Based SSRF
+* Class Server-Side Injection (SQL, Etc.)
+
+## How do HTTP Host Header Vulnerabilities Arise?
+Typically, these arise due to flawed assumptions that the host header is not user controllable. Even if the Host Header is handled more securely, other headers can be injected to override the secure header if the functionality is supported by default.
+
+Many vulnerabilities arise because of insecure configurations in the application's infrastructure. Configurations issues occur when websites integrate third-party technologies into their architecture without necessarily understanding the configuration options and their security implementation.
+
+## How can HTTP Host Header Vulnerabilities be Prevented?
+The most effective solution is to not use the host-header at all in server-side code. Double-check whether each URL needs to be absolute. Often, you can use a relative URL instead. This change can help prevent web cache poisoning vulnerabilities in particular.
+In addition ot the above you can do the following:
+* Protect Absolute URLS: When you have to use absolute URLs, requre the current domain to be manually specified in a configuration file and refer to this value instead of the Host-Header. This eliminates the threat of password reset poisoning, for example.
+
+* Validate the Host Header: If you must use the host header, make sure it is validated properly. Check it against a whitelist of permitted domains and reject or redirect any requests for unrecognized hosts. Consult the framework documentation on how to do this.
+
+* Do-not support Host Override Headers: It is important to check additional headers are not supported. In particular, X-Forwarded-Host. These may be supported by default.
+
+* Whitelist Permitted Domains: Configure the load-balancer or any reverse proxy to forward requests only to a whitelist of permitted domains.
+
+* Be careful with Internal-Only Virtual Hosts: Avoid hosting internal-only websites and applications on the same server as public-facing content. Otherwise, attacks may be able to access internal domains via Host Header Manipulation.
