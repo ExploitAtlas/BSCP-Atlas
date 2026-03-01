@@ -1,0 +1,40 @@
+#What is Information Disclosure?
+Information disclosure is the retrieval of sensitive information regarding an applications underlying code, technology stack, or data. Once you identify information disclosure vulnerabilities you can become more efficient and intentional with your testing.
+
+Also known as information leakage, it is any data that discloses sensitive information like data about other users (Usernames or financial information), sensitive commercial or business data, and technical details about the website and its infrastructure.
+
+While some of the information will be of limited use, it can be used as a starting point for exposing additional attack surface, which may contain other vulnerabilities. The knowledge you gain could provide the missing piece when trying to construct a high-severity attack.
+
+Occasionally, sensitive information could be disclosed carelessly to users who are simply browsing the website in a normal fashion. More commonly, an attacker needs to elicit the information disclosure by interacting with the website in unexpected or malicious ways. They will carefully study the server responses to identify interesting behavior.
+
+###Examples of Information Disclosure Include:
+* Revealing names of hidden directories, their structure, and their contents via a robots.txt file.
+* Providing access to source code files via temporary backups
+* Explicitly mentioning database table or column names in error messages
+* Unnecessarily exposing highly sensitive information such as credit card details
+* Hard-Coding API Keys, IP Addresses, Database credentials, and so on in source code
+* Hinting at the existence or absence or resources, usernames, and so on via subtle differences in application behavior.
+
+## How do Information Disclosure Vulnerabilities Occur?
+Information disclosure can occur for many reasons, most notably:
+* Failure to remote internal content from public content (Developer Comments in markup are sometimes visible to users in the production environment)
+* Insecure configurations of the website and related technologies. For instance, failing to disable debugging and diagnostic features can sometimes provide attackers with useful tools to help them obtain sensitive information. Default configurations can also leave websites vulnerable by displaying verbose error messages.
+* Flawed Design and Behavior of the Application. For example, if the website returns distinct responses when different error states occur. This can allow attackers to enumerate sensitive data such as valid user credentials.
+
+## What is the Impact of Information Disclosure?
+Information Disclosure can have a direct and indirect impact depending on the purpose of the website and, therefore, what information the attacker is able to obtain. For instance, leaking of customer credit cards is a major risk. Though if technical information such as directory structure or third-party frameworks are being used, it may have little to no impact.  In the right hands though, the information can be used to construct a number of exploits.
+
+### How can we Assess the Severity of the Disclosure?
+The severity is specific to each circumstance. The disclosure of technical information is often only of interest if we can use it to demonstrate how an attacker could use it to do something harmful
+
+Knowing a website is on a particular framework version is of limited use if it is fully patched. Though if the application is outdated, exploits may exist that can have a devastating affect.
+
+It is important to exercise common sense when you find potentially sensitive information is being leaked. Minor technical details can be scraped in many ways on a website. Your main focus should be on the impact and exploitability of the information, not just the presence of the information disclosure as the standalone issue. The obvious exception is when the leaked information is so sensitive that it warrants attention in its own rights.
+
+## How can we Prevent Information Disclosure Vulnerabilities?
+This is tricky because there's a wide variety of ways information disclosure can occur. The best practices to follow to minimize the risk of these vulnerabilities is as follows:
+* Make sure everyone developing the website is aware of what information is sensitive. Highlighting dangerous areas can keep the team aware of any accidental leakage during development.
+* Audit any code for potential information disclosure as part of the QA process. Some of this can be automated, such as stripping developer comments.
+* Use generic error messages as much as possible.
+* Double-Check that debugging or diagnostic features are disabled in the production environment.
+* Make sure to fully understand the configuration settings, and security implementations, of any third-party technology that you implement. Take the time to investigate and disable any features and settings you don't actually need.
